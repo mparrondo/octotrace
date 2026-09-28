@@ -34,7 +34,19 @@
 
 ## Overview
 
+<details open>
+<summary><b>🇬🇧 English</b></summary>
 
+**octoTrace** contains the analysis code supporting the study *"Genome-wide SNP discovery and a reduced diagnostic panel for geographic assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and adjacent fishing regions."* The repository documents the workflows used to filter genome-wide SNP data, identify informative markers, and evaluate reduced SNP panels for geographic assignment across five operational population units: Northern and Southern Iberian Atlantic, Western and Eastern Mediterranean, and Macaronesia. The selected eight-SNP panel offers a balance between assignment performance and marker number. Its intended resolution is regional; the current data do not support assignment specifically to the Asturian fishery.
+
+</details>
+
+<details>
+<summary><b>🇪🇸 Español</b></summary>
+
+**octoTrace** contiene el código de análisis empleado en el estudio *"Genome-wide SNP discovery and a reduced diagnostic panel for geographic assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and adjacent fishing regions."*  El repositorio documenta los flujos de trabajo utilizados para filtrar datos genómicos de SNPs, identificar marcadores informativos y evaluar paneles reducidos para la asignación geográfica en cinco unidades poblacionales operativas: Atlántico ibérico norte y sur, Mediterráneo occidental y oriental, y Macaronesia. El panel seleccionado de ocho SNPs ofrece un equilibrio entre la precisión de asignación y el número de marcadores. Su resolución prevista es regional: los datos actuales no permiten asignar ejemplares específicamente a la pesquería asturiana.
+
+</details>
 
 ---
 
@@ -46,6 +58,11 @@
     ├── README.md
     └── resources
         └── octotrace_logo.png
+    └── scripts
+        └── 01_basemaps.R
+        └── 02_snpfiltr.R  
+        └── 03_mpcrselect.config 
+        └── 04_snpaimer.R  
 ```
 ---
 
@@ -53,9 +70,44 @@
 
 ### Prerequisites
 
-This project requires the following dependencies:
+The analysis was developed in R 4.6.1 on 64-bit Manjaro Linux
+(`x86_64-pc-linux-gnu`; kernel `7.1.13-2-MANJARO`). RStudio Desktop is
+recommended but not required; the R analyses can also be run from a standard
+R session or the command line.
 
-- **Programming Language:** unknown
+R package dependencies are managed with
+[renv](https://rstudio.github.io/renv/). If `renv.lock` is included in this
+repository, it records the package versions and installation sources used for
+the R-based analyses. An internet connection is generally required for the
+initial dependency restore.
+
+The workflow comprises four components:
+
+1. **SNP filtering:** [SNPfiltR](https://cran.r-project.org/package=SNPfiltR)
+   and associated R scripts were used to inspect and filter genotype data.
+2. **Candidate marker selection:** [mPCRselect](https://github.com/ellieearmstrong/mPCRselect)
+   was run as a Nextflow workflow in a bioinformatics high-performance
+   computing (HPC) environment. Reproducing this stage as run in the study
+   requires access to a suitably configured cluster, the pipeline's external
+   software dependencies, and the corresponding configuration files.
+   Restoring `renv.lock` alone does not install these HPC dependencies.
+3. **Diagnostic panel evaluation:** [snpAIMeR](https://cran.r-project.org/package=snpAIMeR)
+   and associated R scripts were used to evaluate marker combinations and
+   geographic assignment performance.
+4. **Maps and figures:** R scripts were used to generate sampling maps and
+   other figures. Recreating the maps may require access to externally
+   sourced coastline and bathymetric data if these are not provided with
+   the repository.
+
+To restore the R environment from the repository root, run:
+
+```r
+install.packages("renv")
+renv::restore()
+```
+
+The `mPCRselect` stage must be configured separately for the available HPC
+environment before the complete workflow can be rerun.
 
 ### Installation
 
@@ -74,14 +126,15 @@ Build octotrace from the source and intsall dependencies:
     ```
 
 3. **Install the dependencies:**
+This project uses the renv package to provide a reproducible R environment. Package versions and sources are recorded in renv.lock. After downloading or cloning the repository, open octotrace.Rproj in RStudio (or set the working directory to the project root) and restore the required packages by running:
+```r
+install.packages("renv")  # Run only if renv is not already installed
+renv::restore()
+```
+This step only needs to be performed once when setting up the project.
 
-echo 'INSERT-INSTALL-COMMAND-HERE'
-
-### Usage
-
-Run the project with:
-
-echo 'INSERT-RUN-COMMAND-HERE'
+The `mPCRselect` stage must be configured separately for the available HPC
+environment before the complete workflow can be rerun.
 
 ---
 
