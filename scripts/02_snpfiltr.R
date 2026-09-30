@@ -1,8 +1,19 @@
+# ============================================================================ #
+# Genome-wide SNP discovery and a reduced diagnostic panel for geographic
+# assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and
+# adjacent fishing regions
+# 
+# Data Analysis
+# Author: Marina Parrondo Lombardía (parrondomarina@proton.me)
+# ============================================================================ #
+
+suppressPackageStartupMessages({
 library(tidyverse)
 library(janitor)
 library(viridis)
 library(vcfR)
 library(SNPfiltR)
+})
 
 # Data import and exploration --------------------------------------------------
 vcf <- read.vcfR("data/raw/final_octopus_UNO_120803_RAW_SNPs.vcf.recode.vcf")

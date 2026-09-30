@@ -1,3 +1,80 @@
+# ============================================================================ #
+# Genome-wide SNP discovery and a reduced diagnostic panel for geographic
+# assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and
+# adjacent fishing regions
+# 
+# Data Analysis
+# Author: Marina Parrondo Lombardía (parrondomarina@proton.me)
+# ============================================================================ #
+
+# Set up reproducible R environment --------------------------------------------
+
+# This project uses the renv package to manage the R environment and ensure
+# reproducibility. The required packages and their specific versions are
+# recorded in renv.lock.
+
+# Configuración de un entorno R reproducible --------------------------------- #
+
+# Este proyecto utiliza el paquete renv para gestionar el entorno R y garantizar
+# la reproducibilidad. Los paquetes necesarios y sus versiones específicas se
+# registran en el archivo renv.lock.
+
+# install.packages("renv")
+# 
+# renv::init()
+# 
+# renv::install(c("tidyverse",
+#                 "viridis",
+#                 "marmap",
+#                 "sf",
+#                 "rnaturalearth",
+#                 "ggspatial",
+#                 "patchwork",
+#                 "ggnewscale",
+#                 "ggrepel",
+#                 "janitor",
+#                 "vcfR",
+#                 "SNPfiltR",
+#                 "ggokabeito",
+#                 "snpAIMeR",
+#                 "yaml",
+#                 "adegenet",
+#                 "hierfstat"))
+# 
+# renv::snapshot()
+
+# Load packages ----------------------------------------------------------------
+
+# This analysis uses the renv package to manage the R environment and ensure
+# reproducibility. The required packages and their specific versions are recorded
+# in renv.lock. When reproducing the analysis, run renv::restore() to install the
+# package versions used in the original analysis.
+
+# The code below loads the packages required for the analysis. Package
+# installation is managed by renv and is therefore not performed directly within
+# the analysis script.
+
+# Restore the reproducible R environment before running the analysis.
+# Run this command once when setting up the project:
+# renv::restore()
+
+# Cargar paquetes ------------------------------------------------------------ #
+
+# Este análisis utiliza el paquete renv para gestionar el entorno de R y
+# garantizar la reproducibilidad. Los paquetes necesarios y sus versiones
+# específicas se registran en el archivo renv.lock. Para reproducir el análisis,
+# se debe ejecutar renv::restore(), que instalará las versiones de los paquetes
+# utilizadas en el análisis original.
+
+# El código que sigue carga los paquetes necesarios para realizar el análisis.
+# La instalación de los paquetes es gestionada por renv y, por tanto, no se
+# realiza directamente dentro del script de análisis.
+
+# Restablece el entorno R reproducible antes de ejecutar el análisis.
+# Ejecuta este comando una vez al configurar el proyecto:
+# renv::restore()
+
+suppressPackageStartupMessages({
 library(tidyverse)
 library(viridis)
 library(marmap)
@@ -7,30 +84,33 @@ library(ggspatial)
 library(patchwork)
 library(ggnewscale)
 library(ggrepel)
+})
 
-# Figura 1: Mapa de muestreo ---------------------------------------------------
-# Coordenadas ---------------------------------------------------------------- #
-# Generales
+# Figure 1: Sampling area ------------------------------------------------------
+# Figura 1: Mapa de muestreo ------------------------------------------------- #
+
+# Coordinates / Coordenadas -------------------------------------------------- #
+# Overview / Generales
 gen_xlim <- c(-18.1, 28.8)
 gen_ylim <- c(-3.8, 46.8)
 
-# España + Baleares
+# Spain + Balearic Islands / España + Baleares
 esp_xlim <- c(-10.5, 5.5)
 esp_ylim <- c(35.0, 44.8)
 
-# Canarias: archipiélago completo
+# Canary Islands / Canarias
 can_xlim <- c(-18.8, -13.6)
 can_ylim <- c(27.1, 29.9)
 
-# Turquía / mar Egeo: centrado en Karaburun
+# Turkey / Turquía
 tur_xlim <- c(23.2, 29.8)
 tur_ylim <- c(37.1, 40.2)
 
-# Ghana: centrado en Tema
+# Ghana
 gha_xlim <- c(-2.5, 2.5)
 gha_ylim <- c(4.2, 7.2)
 
-# Paleta de azules------------------------------------------------------------ #
+# Color palette / Paleta de azules
 blues <- c("#63727a",
            "#6a7a86",
            "#728291",
@@ -41,7 +121,7 @@ blues <- c("#63727a",
            "#c6d3e3",
            "#d3dce6")
 
-# Puntos de muestreo --------------------------------------------------------- #
+# Sampling localities / Puntos de muestreo
 coords <- read_csv("data/processed/coordinates.csv")
 
 coords_gen <- coords %>%
@@ -64,7 +144,8 @@ coords_gha <- coords %>%
   filter(lon >= gha_xlim[1], lon <= gha_xlim[2],
          lat >= gha_ylim[1], lat <= gha_ylim[2])
 
-# Escala de localidades común (evitar colores repetidos entre paneles) ------- #
+# Common location scale (avoid repeating colors across panels)
+# Escala de localidades común (evitar colores repetidos entre paneles)
 all_localities <- sort(unique(coords$locality))
 
 scale_locality <- scale_color_viridis_d(option = "plasma",
@@ -72,7 +153,7 @@ scale_locality <- scale_color_viridis_d(option = "plasma",
                                         drop   = FALSE,
                                         name   = "Locality")
 
-# Batimetría ----------------------------------------------------------------- #
+# Bathymetry / Batimetría
 bathy_gen <- getNOAA.bathy(lon1 = gen_xlim[1],
                            lon2 = gen_xlim[2],
                            lat1 = gen_ylim[1],
@@ -123,7 +204,6 @@ bathy_gha <- getNOAA.bathy(lon1 = gha_xlim[1],
 
 bathy_gha_xyz <- as.xyz(bathy_gha)
 
-# Keep only sea for fill
 bathy_gen_xyz <- bathy_gen_xyz %>%
   filter(V3 < 0)
 
@@ -139,7 +219,7 @@ bathy_tur_xyz <- bathy_tur_xyz %>%
 bathy_gha_xyz <- bathy_gha_xyz %>%
   filter(V3 < 0)
 
-# Profundidad global (misma escala de azules en todos los paneles) ----------- #
+# Global depth / Profundidad global
 depth_min <- min(c(bathy_gen_xyz$V3,
                    bathy_esp_xyz$V3,
                    bathy_can_xyz$V3,
@@ -167,11 +247,11 @@ scale_depth_common <- scale_fill_gradientn(colours = blues,
                                                                   barwidth = unit(0.4, "cm"),
                                                                   barheight = unit(8, "cm")))
 
-# Tierra -----------------------------------------------------------------------
+# Land / Tierra
 world <- ne_countries(scale = "medium",
                       returnclass = "sf")
 
-# COMMON THEME -----------------------------------------------------------------
+# Common theme / Tema común
 theme_map <- theme_classic() +
   theme(legend.position = "right",
         legend.direction = "vertical",
@@ -187,27 +267,13 @@ theme_map <- theme_classic() +
         panel.grid.minor = element_blank(),
         plot.margin = margin(1, 1, 1, 1))
 
-# CAPA COMÚN DE PUNTOS + ETIQUETAS (con ggrepel) ------------------------------
-
+# Common layer of points + labels / Capa común de puntos + etiquetas
 point_labels_gen <- list(geom_point(data = coords_gen,
                                     aes(x = lon,
                                         y = lat,
                                         color = locality),
                                     size = 2.5,
                                     alpha = 0.95))
-                         # geom_text_repel(data = coords_gen,
-                         #                 aes(x = lon,
-                         #                     y = lat,
-                         #                     label = locality),
-                         #                 size = 4,
-                         #                 color = "black",
-                         #                 fontface = "plain",
-                         #                 max.overlaps = Inf,
-                         #                 box.padding = 0.35,
-                         #                 point.padding = 0.25,
-                         #                 segment.color = "grey50",
-                         #                 segment.size = 0.5,
-                         #                 min.segment.length = 0))
 
 point_labels_esp <- list(geom_point(data = coords_esp,
                                     aes(x = lon,
@@ -215,21 +281,6 @@ point_labels_esp <- list(geom_point(data = coords_esp,
                                         color = locality),
                                     size = 3,
                                     alpha = 0.95),
-                         # geom_label_repel(data = coords_esp,
-                         #                  aes(x = lon,
-                         #                      y = lat,
-                         #                      label = locality),
-                         #                  size = 2.6,
-                         #                  color = "black",
-                         #                  fill = scales::alpha("white", 0.75),
-                         #                  label.size = 0.15,
-                         #                  show.legend = FALSE,
-                         #                  max.overlaps = Inf,
-                         #                  box.padding = 0.25,
-                         #                  point.padding = 0.2,
-                         #                  segment.color = "grey35",
-                         #                  segment.size = 0.25,
-                         #                  min.segment.length = 0))
                          geom_text_repel(data = coords_esp,
                                          aes(x = lon,
                                              y = lat,
@@ -304,7 +355,8 @@ point_labels_gha <- list(geom_point(data = coords_gha,
                                          segment.size = 0.5,
                                          min.segment.length = 0))
 
-# GENERAL ---------------------------------------------------------------
+# Overview ---------------------------------------------------------------------
+# General -------------------------------------------------------------------- #
 p_gen <- ggplot() +
   geom_tile(data = bathy_gen_xyz,
             aes(x = V1,
@@ -358,7 +410,8 @@ ggsave(plot = p_gen,
        height = 80,
        dpi = 300)
 
-# SPAIN + BALEARICS ------------------------------------------------------------
+# Spain and Balearic Islands ---------------------------------------------------
+# España y Baleares ---------------------------------------------------------- #
 p_esp <- ggplot() +
   geom_tile(data = bathy_esp_xyz,
             aes(x = V1,
@@ -401,7 +454,8 @@ ggsave(plot = p_esp,
        height = 95,
        dpi = 300)
 
-# CANARY ISLANDS ---------------------------------------------------------------
+# Canary Islands ---------------------------------------------------------------
+# Islas Canarias ------------------------------------------------------------- #
 p_can <- ggplot() +
   geom_tile(data = bathy_can_xyz,
             aes(x = V1,
@@ -448,7 +502,8 @@ ggsave(plot = p_can,
        height = 80,
        dpi = 300)
 
-# TURQUIA ----------------------------------------------------------------
+# Turkey -----------------------------------------------------------------------
+# Turquía -------------------------------------------------------------------- #
 p_tur <- ggplot() +
   geom_tile(data = bathy_tur_xyz,
             aes(x = V1,
@@ -496,7 +551,7 @@ ggsave(plot = p_tur,
        height = 80,
        dpi = 300)
 
-# GULF OF GUINEA ---------------------------------------------------------------
+# Ghana ------------------------------------------------------------------------
 p_gha <- ggplot() +
   geom_tile(data = bathy_gha_xyz,
             aes(x = V1,
@@ -543,6 +598,8 @@ ggsave(plot = p_gha,
        width = 148,
        height = 80,
        dpi = 300)
+
+# Patchwork --------------------------------------------------------------------
 
 design <- "
 AABBBB

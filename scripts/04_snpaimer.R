@@ -1,3 +1,13 @@
+# ============================================================================ #
+# Genome-wide SNP discovery and a reduced diagnostic panel for geographic
+# assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and
+# adjacent fishing regions
+# 
+# Data Analysis
+# Author: Marina Parrondo Lombardía (parrondomarina@proton.me)
+# ============================================================================ #
+
+suppressPackageStartupMessages({
 library(tidyverse)
 library(ggokabeito)
 library(vcfR)
@@ -5,41 +15,53 @@ library(snpAIMeR)
 library(yaml)
 library(adegenet)
 library(hierfstat)
+})
 
 # Write out vcf files for downstream analysis ----------------------------------
+# Generar archivos VCF para análisis posteriores ----------------------------- #
 
+# Load the VCF output from mPCRselect
 # Cargo el vcf que sale de mPCRselect
 vcf_fst_pi <- read.vcfR("data/processed/octopus.fst_pi.vcf.gz")
 
-# Convierte a genind
+# Convert to Genind/ Convierte a genind
 genind <- vcfR2genind(vcf_fst_pi)
 
+# Assigns populations in the same order as the VCF
 # Asigna poblaciones en el mismo orden que el VCF
 pop(genind) <- popmap$pop[match(indNames(genind), popmap$id)]
 
+# Verify that there are no NAs (individuals without an assignment)
 # Verifica que no hay NAs (individuos sin asignación)
 table(is.na(pop(genind)))
 
 # Preselect top SNPs by Fst for snpAIMeR ---------------------------------------
+# Preseleccionar los SNP top según el valor Fst para snpAIMeR ---------------- #
 
-# Convertir genind a formato hierfstat
+# Convert genind to hierfstat format
+# Convertir genind a formato hierfstat 
 hf_data <- genind2hierfstat(genind)
 
+# Calculate locus-specific statistics (includes locus-specific Fst)
 # Calcular estadísticos por locus (incluye Fst por locus)
 bs <- basic.stats(hf_data, diploid = TRUE)
 
+# Extract Fst by locus and sort
 # Extraer Fst por locus y ordenar
 fst_df <- data.frame(locus = locNames(genind),
                      Fst   = bs$perloc$Fst) |>
   dplyr::arrange(dplyr::desc(Fst))
 
+# Top 15 SNPs by Fst
 # Top 15 SNPs por Fst
 print(head(fst_df, 15))
 
+# Subsett genind to top 15
 # Subsetear genind a top 15
 top15 <- fst_df$locus[1:15]
 genind_top15 <- genind[loc = top15]
 
+# PCA of the top 15 SNPs
 # PCA de los top 15 SNPs
 x <- tab(genind_top15,
          NA.method="mean")
@@ -61,7 +83,7 @@ ggplot(pca_df,
   theme_classic() +
   labs(title = "PCA — Top 15 SNPs por Fst")
 
-# Exporta a STRUCTURE
+# Export to STRUCTURE / Exporta a STRUCTURE
 genind2structure <- function(obj, file = "", pops = FALSE){
   if(!"genind" %in% class(obj)){
     warning("Function was designed for genind objects.")
@@ -97,6 +119,10 @@ genind2structure <- function(obj, file = "", pops = FALSE){
               row.names = FALSE)
 }
 
+# Export and correct ':' in marker names.
+# The first row (header with ind/pop) is removed because read.structure
+# does not accept headers with metadata columns—it would count them as extra loci.
+#
 # Exportar y corregir ':' en nombres de marcadores.
 # Se elimina la primera fila (header con ind/pop) porque read.structure
 # no acepta encabezados con columnas de metadata — los contaría como loci extra.
@@ -108,24 +134,25 @@ lines <- readLines("data/processed/octopus_top15.str")
 
 lines[1] <- gsub(":", "_", lines[1])
 
-writeLines(lines[-1], "data/processed/octopus_top15_fixed.str")  # -1 quita el header
+writeLines(lines[-1],
+           "data/processed/octopus_top15_fixed.str")
 
 rm(lines)
 
-# Verificación rápida
+# Quick check / Verificación rápida
 str_top15 <- read.table("data/processed/octopus_top15_fixed.str",
                         header = FALSE,
-                        sep = "\t")  # header=FALSE porque ya no existe
-# Filas (n.ind x 2)
-nrow(str_top15) # debe ser 906
-# Columnas
-ncol(str_top15) # debe ser 17 (2 meta + 15 SNPs)
-# Marcadores
-ncol(str_top15) - 2 # debe ser 15
+                        sep = "\t")
+# Rows / Filas (n.ind x 2)
+nrow(str_top15)
+# Columns / Columnas
+ncol(str_top15)
+# Markers / Marcadores
+ncol(str_top15) - 2
 
 rm(str_top15)
 
-# Config y lanzamiento
+# Configuration / Configuración
 config <- list(min_range = 1L,
                max_range = 15L,
                assignment_rate_threshold = 0.9,
@@ -143,9 +170,10 @@ config <- list(min_range = 1L,
                optional_population_info = NULL,
                genotype_character_separator = NULL)
 
-write_yaml(config, "data/processed/snpAIMeR_config.yaml")
+write_yaml(config,
+           "data/processed/snpAIMeR_config.yaml")
 
-# Ejecutamos
+# Run / Ejecutamos
 snpAIMeR("non-interactive",
          "data/processed/snpAIMeR_config.yaml",
          verbose = TRUE)
@@ -154,27 +182,32 @@ all_comb <- read.csv("results/snpAIMeR/All_combinations_assign_rate.csv")
 above <- read.csv("results/snpAIMeR/Above_threshold_assign_rate.csv")
 panel <- read.csv("results/snpAIMeR/Panel_size_assign_rate.csv")
 
-# Combinaciones evaluadas:
+# Combinations evaluated / Combinaciones evaluadas
 nrow(all_comb)
-# Combinaciones sobre umbral 0.9:
+# Combinations above the 0.9 threshold
+# Combinaciones sobre umbral 0.9
 nrow(above)
-# Asignación por tamaño de panel:
+# APanel size / Tamaño de panel
 print(panel)
 
 head(all_comb)
 colnames(all_comb)
 
+# Top 10 best global combinations
 # Top 10 mejores combinaciones globales
 head(all_comb[order(-all_comb$avg_success_rate), ], 10)
 
+# Add a column with the number of loci
 # Añadir columna con número de loci
 all_comb$panel_size <- sapply(strsplit(all_comb$marker, ", "), length)
 
+# Best combination for each panel size
 # Mejor combinación por cada tamaño de panel
 best_per_size <- do.call(rbind, lapply(split(all_comb, all_comb$panel_size), 
                                        function(x) x[which.max(x$avg_success_rate), ]))
 print(best_per_size)
 
+# Read the header of the original file (before removing the header)
 # Leer el header del archivo original (antes de quitar el header)
 header <- readLines("data/processed/octopus_top15.str", n = 1)
 marker_names <- strsplit(header, "\t")[[1]]
@@ -190,18 +223,21 @@ best_8 <- all_comb %>%
             n = 1,
             with_ties = FALSE)
 
+# Separate the markers from that combination
 # Separar los marcadores de esa combinación
 panel_8 <- trimws(strsplit(best_8$marker[[1]], ",", fixed = TRUE)[[1]])
 
 print(panel_8)
 print(best_8$avg_success_rate)
 
+# Convert L01...L15 to the original locus names
 # Convertir L01...L15 a los nombres originales de los loci
 stopifnot(all(panel_8 %in% names(loci_names)))
 
-# Panel óptimo
+# Optimal panel / Panel óptimo
 print(loci_names[panel_8])
 
+# Subset of the genind object containing the 8 SNPs from the optimal panel
 # Subset del genind con los 8 SNPs del panel óptimo
 panel_loci <- c("RXHP01002566_1:16165",
                 "RXHP01002823_1:48716",
@@ -225,7 +261,7 @@ pca_df <- data.frame(PC1 = pca_panel8$li[, 1],
                      PC2 = pca_panel8$li[, 2],
                      pop = pop(genind_panel8))
 
-# Varianza explicada
+# Explained variance / Varianza explicada
 var_exp <- round(pca_panel8$eig / sum(pca_panel8$eig) * 100, 1)
 
 levels(pop(genind_panel8))
@@ -258,7 +294,7 @@ ggsave("results/snpAIMeR/PCA_panel8.png",
        height = 6,
        dpi    = 300)
 
-# Función para PCA de un panel de SNPs
+# Function for PCA of a SNP panel/ Función para PCA de un panel de SNPs
 run_pca_panel <- function(genind_obj, panel_loci, panel_name, pop_labels) {
   
   # Subset loci
@@ -274,7 +310,7 @@ run_pca_panel <- function(genind_obj, panel_loci, panel_name, pop_labels) {
                        PC2 = pca$li[, 2],
                        pop = pop(genind_panel))
   
-  # Varianza explicada
+  # Explained variance / Varianza explicada
   var_exp <- round(pca$eig / sum(pca$eig) * 100, 1)
   
   # Plot
@@ -291,7 +327,7 @@ run_pca_panel <- function(genind_obj, panel_loci, panel_name, pop_labels) {
          y     = paste0("PC2 (", var_exp[2], "%)"),
          color = "Population") +
     theme_classic()
-  # Guardar
+  # Save / Guardar
   ggsave(paste0("results/snpAIMeR/PCA_panel", panel_name, ".png"),
          plot = p,
          width = 9,
@@ -343,6 +379,8 @@ pca11 <- run_pca_panel(genind_top15,
                        panel_loci_11,
                        "11",
                        pop_labels)
+
+# Figure 2 ---------------------------------------------------------------------
 
 fig_pca <- (pca3$plot | pca8$plot | pca11$plot) +
   plot_layout(guides = "collect") +
@@ -457,7 +495,7 @@ cv_dapc <- function(gi, loci, n_rep = 1000, train_frac = 0.75,
   pops <- pop(gi)
   n_by_pop <- table(pops)
   
-  ## Grupos con menos de 4 individuos no admiten un reparto 75/25 informativo
+  # Grupos con menos de 4 individuos no admiten un reparto 75/25 informativo
   too_small <- names(n_by_pop)[n_by_pop < 4]
   if (length(too_small)) {
     message("Unidades excluidas de la CV por n < 4: ",
@@ -512,7 +550,7 @@ loo8 <- cv_dapc(genind_top15,
                 panel_loci_8,
                 n_rep = 1000)
 
-## Matriz de confusión (proporciones por fila = origen real)
+# Matriz de confusión (proporciones por fila = origen real)
 conf <- table(True = loo8$true,
               Assigned = loo8$assigned)
 
@@ -549,8 +587,8 @@ round(mean(loo8$correct), 4)
 
 # Macro-media no ponderada por tamaño de grupo
 round(mean(per_unit$rate), 4)
-## El IC binomial aquí es optimista: las réplicas reutilizan los mismos
-## individuos, así que las observaciones no son independientes
+# El IC binomial aquí es optimista: las réplicas reutilizan los mismos
+# individuos, así que las observaciones no son independientes
 
 # Asignación por pares de poblaciones ------------------------------------------
 # Reajusta el DAPC dentro de cada par, que es lo que pide Trini
@@ -564,11 +602,16 @@ pairwise_assign <- function(gi, loci, n_rep = 500) {
   bind_rows(lapply(pares, function(p) {
     sub <- gi[as.character(pop(gi)) %in% p, ]
     pop(sub) <- factor(as.character(pop(sub)))
-    res <- cv_dapc(sub, loci, n_rep = n_rep)
-    n_ok <- sum(res$correct); n_t <- nrow(res)
-    data.frame(unit_a = p[1], unit_b = p[2],
-               n_a = sum(pop(sub) == p[1]), n_b = sum(pop(sub) == p[2]),
-               rate  = n_ok / n_t,
+    res <- cv_dapc(sub,
+                   loci,
+                   n_rep = n_rep)
+    n_ok <- sum(res$correct);
+    n_t <- nrow(res)
+    data.frame(unit_a = p[1],
+               unit_b = p[2],
+               n_a = sum(pop(sub) == p[1]),
+               n_b = sum(pop(sub) == p[2]),
+               rate = n_ok / n_t,
                ci_lo = prop.test(n_ok, n_t)$conf.int[1],
                ci_hi = prop.test(n_ok, n_t)$conf.int[2])
   }))
@@ -577,6 +620,7 @@ pairwise_assign <- function(gi, loci, n_rep = 500) {
 pw8 <- pairwise_assign(genind_top15,
                        panel_loci_8,
                        n_rep = 500)
+
 print(as.data.frame(pw8),
       digits = 4)
 
@@ -584,11 +628,11 @@ write.csv(pw8,
           file.path("results/snpAIMeR/Pairwise_assignment_panel8.csv"),
           row.names = FALSE)
 
-## El par que interesa
+# El par que interesa
 print(pw8 %>%
         filter(grepl("orth", unit_a) | grepl("orth", unit_b)))
 
-## Mismo cálculo para los paneles de 3 y 11, para la tabla suplementaria
+# Mismo cálculo para los paneles de 3 y 11, para la tabla suplementaria
 pw3  <- pairwise_assign(genind_top15,
                         panel_loci_3, 
                         n_rep = 500)
@@ -608,7 +652,7 @@ write.csv(pw_all,
           file.path("results/snpAIMeR/Pairwise_assignment_all_panels.csv"),
           row.names = FALSE)
 
-## Mapa de calor por pares (panel de 8)
+# Mapa de calor por pares (panel de 8)
 p_pw <- ggplot(pw8,
                aes(unit_a,
                    unit_b,
@@ -674,8 +718,8 @@ cv_dapc2 <- function(gi, loci, n_rep = 1000, train_frac = 0.75,
   gi <- gi[!(as.character(pops) %in% too_small), ]
   pops <- factor(pop(gi))
   
-  ## Si balance = TRUE, en cada réplica se submuestrea cada población al
-  ## tamaño del grupo más pequeño, de modo que el prior sea efectivamente plano
+  # Si balance = TRUE, en cada réplica se submuestrea cada población al
+  # tamaño del grupo más pequeño, de modo que el prior sea efectivamente plano
   if (is.null(n_bal)) n_bal <- min(table(pops))
   
   n_pca <- min(ncol(tab(gi)) - 1, 20)
@@ -712,8 +756,8 @@ cv_dapc2 <- function(gi, loci, n_rep = 1000, train_frac = 0.75,
     pr <- tryCatch(predict.dapc(d, newdata = gi_te), error = function(e) NULL)
     if (is.null(pr)) next
     
-    ## Prior uniforme: se reponderan las posteriores dividiendo por la
-    ## frecuencia del grupo en el entrenamiento y se renormaliza
+    # Prior uniforme: se reponderan las posteriores dividiendo por la
+    # frecuencia del grupo en el entrenamiento y se renormaliza
     if (prior == "uniform") {
       w <- as.numeric(table(p_tr)[colnames(pr$posterior)])
       post <- sweep(pr$posterior, 2, w, "/")
@@ -759,14 +803,14 @@ resumen <- bind_rows(lapply(names(esc), function(nm) {
 
 print(resumen, digits = 4)
 
-## Matriz de confusión por escenario
+# Matriz de confusión por escenario
 for (nm in names(esc)) {
   cat("\n---", nm, "---\n")
   print(round(prop.table(table(True = esc[[nm]]$true,
                                Assigned = esc[[nm]]$assigned), 1), 3))
 }
 
-## Tasas por unidad en los tres escenarios
+# Tasas por unidad en los tres escenarios
 per_unit_all <- bind_rows(lapply(names(esc), function(nm) {
   esc[[nm]] %>%
     group_by(true) %>%
@@ -813,7 +857,8 @@ ggsave(file.path("results/snpAIMeR/Per_unit_by_prior.png"),
        height = 4.5,
        dpi = 300)
 
-# Par norte-sur ibérico con tamaños equilibrados -------------------------------
+# Iberian north-south pair with balanced sizes ---------------------------------
+# Par norte-sur ibérico con tamaños equilibrados ----------------------------- #
 pair_ns <- c("northern_iberian_atlantic",
              "southern_iberian_atlantic")
 gi_ns <- genind_top15[as.character(pop(genind_top15)) %in% pair_ns, ]
@@ -827,15 +872,20 @@ ns_bal  <- cv_dapc2(gi_ns,
                     prior = "proportional",
                     balance = TRUE)
 
-# Norte vs sur, tamaños originales (360/45):
+# North vs. South, original sizes (360/45)
+# Norte vs sur, tamaños originales (360/45)
 round(mean(ns_prop$correct), 4)
 print(round(prop.table(table(ns_prop$true,
                              ns_prop$assigned), 1), 3))
 
-# Norte vs sur, submuestreado a 45/45:
+# North vs. South, downsampled to 45/45
+# Norte vs sur, submuestreado a 45/45
 round(mean(ns_bal$correct), 4)
 print(round(prop.table(table(ns_bal$true, ns_bal$assigned), 1), 3))
 
+# False positive rate for certified origin: individuals from the south
+# assigned to the north. This is the relevant figure for traceability.
+#
 # Tasa de falso positivo para el origen certificado: individuos del sur
 # asignados al norte. Es la cifra relevante para trazabilidad.
 fp <- ns_bal %>%
