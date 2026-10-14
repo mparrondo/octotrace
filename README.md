@@ -14,6 +14,7 @@
 
 <em>Built with the tools and technologies:</em>
 
+<img src="https://img.shields.io/badge/R-276DC3.svg?style=for-the-badge&logo=R&logoColor=white" alt="R">
 
 <br clear="left"/>
 
