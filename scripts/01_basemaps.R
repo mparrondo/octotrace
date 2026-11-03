@@ -406,8 +406,8 @@ ggsave(plot = p_gen,
        device = "png",
        path = "results/figures/maps/",
        units = "mm",
-       width = 148,
-       height = 80,
+       width = 80,
+       height = 90,
        dpi = 300)
 
 # Spain and Balearic Islands ---------------------------------------------------
