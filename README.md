@@ -38,14 +38,14 @@
 <details open>
 <summary><b>🇬🇧 English</b></summary>
 
-**octoTrace** contains the analysis code supporting the study *"Genome-wide SNP discovery and a reduced diagnostic panel for geographic assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and adjacent fishing regions."* The repository documents the workflows used to filter genome-wide SNP data, identify informative markers, and evaluate reduced SNP panels for geographic assignment across five operational population units: Northern and Southern Iberian Atlantic, Western and Eastern Mediterranean, and Macaronesia. The selected eight-SNP panel offers a balance between assignment performance and marker number. Its intended resolution is regional; the current data do not support assignment specifically to the Asturian fishery.
+**octoTrace** contains the analysis code supporting the study *"Genome-wide SNP discovery and a reduced diagnostic panel for geographic assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and adjacent fishing regions."* The repository documents the workflows used to filter genome-wide SNP data, identify informative markers, and evaluation of three-, five-, and 10-SNP panels across four geographic reference units: Northern and Southern Iberian Atlantic, Western Mediterranean, and Macaronesia. Its intended resolution is regional; the current data do not support assignment specifically to the MSC-certified Asturian fishery.
 
 </details>
 
 <details>
 <summary><b>🇪🇸 Español</b></summary>
 
-**octoTrace** contiene el código de análisis empleado en el estudio *"Genome-wide SNP discovery and a reduced diagnostic panel for geographic assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and adjacent fishing regions."*  El repositorio documenta los flujos de trabajo utilizados para filtrar datos genómicos de SNPs, identificar marcadores informativos y evaluar paneles reducidos para la asignación geográfica en cinco unidades poblacionales operativas: Atlántico ibérico norte y sur, Mediterráneo occidental y oriental, y Macaronesia. El panel seleccionado de ocho SNPs ofrece un equilibrio entre la precisión de asignación y el número de marcadores. Su resolución prevista es regional: los datos actuales no permiten asignar ejemplares específicamente a la pesquería asturiana.
+**octoTrace** contiene el código de análisis empleado en el estudio *"Genome-wide SNP discovery and a reduced diagnostic panel for geographic assignment of common octopus (Octopus vulgaris) in the Bay of Biscay and adjacent fishing regions."* Incluye el filtrado de SNPs, la selección de marcadores informativos y la evaluación de paneles de 3, 5 y 10 SNPs en cuatro unidades geográficas de referencia: Atlántico ibérico norte y sur, Mediterráneo occidental y Macaronesia. Su resolución es regional: la asignación no demuestra procedencia de la pesquería asturiana certificada MSC.
 
 </details>
 
